@@ -1,0 +1,181 @@
+<Page
+    x:Class="Mendrain.Views.BatchExtractPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:core="using:Mendrain.Core.Models"
+    xmlns:h="using:Mendrain.Helpers"
+    Background="Transparent">
+
+    <Grid MaxWidth="{StaticResource PageMaxWidth}" Padding="{StaticResource PagePadding}" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Spacing="4">
+            <TextBlock Text="Batch Extract" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock Text="Extract many archives one after another. Each archive goes into its own folder named after it."
+                       Style="{StaticResource PageSubtitleStyle}" />
+        </StackPanel>
+
+        <!-- Toolbar -->
+        <Grid Grid.Row="1" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button Command="{x:Bind ViewModel.AddArchivesCommand}" IsEnabled="{x:Bind ViewModel.IsIdle, Mode=OneWay}" AutomationProperties.Name="Add archives">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="{StaticResource GlyphAdd}" Style="{StaticResource IconButtonGlyphStyle}" />
+                    <TextBlock Text="Add archives" />
+                </StackPanel>
+            </Button>
+            <Button Grid.Column="1" Click="RemoveSelected_Click" IsEnabled="{x:Bind ViewModel.CanEditQueue, Mode=OneWay}" AutomationProperties.Name="Remove">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="{StaticResource GlyphRemove}" Style="{StaticResource IconButtonGlyphStyle}" />
+                    <TextBlock Text="Remove" />
+                </StackPanel>
+            </Button>
+            <Button Grid.Column="2" Command="{x:Bind ViewModel.ClearCommand}" IsEnabled="{x:Bind ViewModel.CanEditQueue, Mode=OneWay}" AutomationProperties.Name="Clear">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="{StaticResource GlyphDelete}" Style="{StaticResource IconButtonGlyphStyle}" />
+                    <TextBlock Text="Clear" />
+                </StackPanel>
+            </Button>
+            <TextBlock Grid.Column="3" Text="{x:Bind ViewModel.QueueSummary, Mode=OneWay}" Style="{StaticResource SecondaryTextStyle}"
+                       HorizontalAlignment="Right" VerticalAlignment="Center" />
+        </Grid>
+
+        <!-- Queue -->
+        <Grid x:Name="QueueZone" Grid.Row="2" AllowDrop="True" DragOver="Queue_DragOver" DragLeave="Queue_DragLeave" Drop="Queue_Drop"
+              Background="Transparent" CornerRadius="{StaticResource CardCornerRadius}">
+            <Border Style="{StaticResource CardStyle}" Padding="0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    Visibility="{x:Bind h:Format.Hide(ViewModel.IsQueueEmpty), Mode=OneWay}">
+                <ListView
+                    x:Name="QueueList"
+                    Padding="0,4"
+                    ItemsSource="{x:Bind ViewModel.Jobs}"
+                    SelectionMode="Extended"
+                    KeyDown="QueueList_KeyDown"
+                    ItemContainerStyle="{StaticResource StretchListViewItemStyle}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="core:ArchiveJob">
+                            <Grid ColumnSpacing="14" Padding="0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid Width="20" VerticalAlignment="Top" Margin="0,2,0,0">
+                                    <FontIcon Glyph="{x:Bind h:Format.StatusGlyph(Status), Mode=OneWay}" FontSize="{StaticResource IconSizeM}"
+                                              Foreground="{x:Bind h:Format.StatusBrush(Status), Mode=OneWay}"
+                                              Visibility="{x:Bind h:Format.HideWhenRunning(Status), Mode=OneWay}" />
+                                    <ProgressRing Width="16" Height="16" IsActive="{x:Bind h:Format.IsRunning(Status), Mode=OneWay}"
+                                                  Visibility="{x:Bind h:Format.ShowWhenRunning(Status), Mode=OneWay}" />
+                                </Grid>
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="{x:Bind FileName}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Style="{StaticResource SecondaryTextStyle}">
+                                        <Run Text="→ " /><Run Text="{x:Bind DestinationFolderName, Mode=OneWay}" />
+                                    </TextBlock>
+                                    <TextBlock Text="{x:Bind Message, Mode=OneWay}" Style="{StaticResource SecondaryTextStyle}" TextWrapping="Wrap"
+                                               Foreground="{x:Bind h:Format.StatusBrush(Status), Mode=OneWay}"
+                                               Visibility="{x:Bind h:Format.ShowIf(Message), Mode=OneWay}" />
+                                    <ProgressBar Margin="0,6,0,0" MaxWidth="420" HorizontalAlignment="Left" Width="420"
+                                                 Value="{x:Bind h:Format.Percent(Progress), Mode=OneWay}"
+                                                 IsIndeterminate="{x:Bind h:Format.IsIndeterminate(Progress), Mode=OneWay}"
+                                                 Visibility="{x:Bind h:Format.ShowWhenRunning(Status), Mode=OneWay}" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="{x:Bind h:Format.StatusText(Status), Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{x:Bind h:Format.StatusBrush(Status), Mode=OneWay}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Border>
+
+            <!-- Empty state -->
+            <Grid Visibility="{x:Bind h:Format.Show(ViewModel.IsQueueEmpty), Mode=OneWay}" Background="{ThemeResource DropZoneBackgroundBrush}"
+                  CornerRadius="{StaticResource CardCornerRadius}">
+                <Rectangle RadiusX="8" RadiusY="8" Stroke="{ThemeResource DropZoneStrokeBrush}" StrokeThickness="1.5" StrokeDashArray="5,4" />
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" Padding="24">
+                    <Border Width="56" Height="56" CornerRadius="28" Background="{ThemeResource IconTileBackgroundBrush}" HorizontalAlignment="Center">
+                        <FontIcon Glyph="{StaticResource GlyphBatch}" FontSize="24" Foreground="{ThemeResource IconTileForegroundBrush}" />
+                    </Border>
+                    <TextBlock Text="Drop archives here" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                    <TextBlock Text="or use Add archives. ZIP, 7Z and RAR are supported." Style="{StaticResource PageSubtitleStyle}" HorizontalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <InfoBar Grid.Row="3" Severity="Informational" IsOpen="{x:Bind ViewModel.IsNoticeOpen, Mode=TwoWay}"
+                 Message="{x:Bind ViewModel.NoticeText, Mode=OneWay}" />
+
+        <!-- Destination, progress and actions -->
+        <StackPanel Grid.Row="4" Spacing="12">
+            <InfoBar IsOpen="{x:Bind ViewModel.IsSummaryOpen, Mode=TwoWay}"
+                     Severity="{x:Bind ViewModel.SummarySeverity, Mode=OneWay}"
+                     Title="{x:Bind ViewModel.SummaryTitle, Mode=OneWay}"
+                     Message="{x:Bind ViewModel.SummaryMessage, Mode=OneWay}">
+                <InfoBar.ActionButton>
+                    <Button Content="Open destination" Command="{x:Bind ViewModel.OpenDestinationCommand}" />
+                </InfoBar.ActionButton>
+                <ScrollViewer MaxHeight="140" Margin="0,0,0,12" Visibility="{x:Bind h:Format.ShowIf(ViewModel.SummaryDetails), Mode=OneWay}">
+                    <TextBlock Text="{x:Bind ViewModel.SummaryDetails, Mode=OneWay}" Style="{StaticResource SecondaryTextStyle}"
+                               TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                </ScrollViewer>
+            </InfoBar>
+
+            <Border Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="12" RowSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox IsEnabled="{x:Bind ViewModel.IsIdle, Mode=OneWay}" Header="Destination" PlaceholderText="Choose where the archive folders are created"
+                                 Text="{x:Bind ViewModel.Destination, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button IsEnabled="{x:Bind ViewModel.IsIdle, Mode=OneWay}" Grid.Column="1" VerticalAlignment="Bottom" Command="{x:Bind ViewModel.BrowseDestinationCommand}"
+                                ToolTipService.ToolTip="Choose folder" AutomationProperties.Name="Choose destination folder">
+                            <FontIcon Glyph="{StaticResource GlyphFolderOpen}" Style="{StaticResource IconButtonGlyphStyle}" />
+                        </Button>
+                    </Grid>
+
+                    <Button Grid.Column="1" VerticalAlignment="Bottom" MinWidth="130" Style="{StaticResource AccentButtonStyle}"
+                            Command="{x:Bind ViewModel.ExtractAllCommand}" IsEnabled="{x:Bind ViewModel.CanExtract, Mode=OneWay}"
+                            Visibility="{x:Bind h:Format.Show(ViewModel.IsIdle), Mode=OneWay}" AutomationProperties.Name="Extract all">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource GlyphExtract}" Style="{StaticResource IconButtonGlyphStyle}" />
+                            <TextBlock Text="Extract all" />
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="1" VerticalAlignment="Bottom" MinWidth="130" Content="Cancel"
+                            Command="{x:Bind ViewModel.CancelCommand}" Visibility="{x:Bind h:Format.Show(ViewModel.IsRunning), Mode=OneWay}" />
+
+                    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Spacing="6" Visibility="{x:Bind h:Format.Show(ViewModel.IsRunning), Mode=OneWay}">
+                        <Grid>
+                            <TextBlock Text="{x:Bind ViewModel.CurrentJobText, Mode=OneWay}" Style="{StaticResource SecondaryTextStyle}" />
+                            <TextBlock Text="{x:Bind ViewModel.OverallText, Mode=OneWay}" Style="{StaticResource SecondaryTextStyle}" HorizontalAlignment="Right" />
+                        </Grid>
+                        <ProgressBar Value="{x:Bind ViewModel.OverallProgress, Mode=OneWay}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </Grid>
+</Page>

@@ -1,0 +1,13 @@
+# Normalize text files; keep Windows line endings where Windows tools expect them.
+* text=auto
+*.sln     text eol=crlf
+*.csproj  text eol=crlf
+*.ps1     text eol=crlf
+*.iss     text eol=crlf
+
+# Binary assets and test fixtures: never touch their bytes.
+*.png binary
+*.ico binary
+*.zip binary
+*.7z  binary
+*.rar binary

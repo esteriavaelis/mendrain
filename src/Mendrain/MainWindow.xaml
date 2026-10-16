@@ -1,0 +1,69 @@
+<Window
+    x:Class="Mendrain.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Mendrain">
+
+    <Grid x:Name="Root" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Title bar (draggable area) -->
+        <Grid x:Name="AppTitleBar" Height="48" Padding="16,0,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Image Source="ms-appx:///Assets/Logo.png" Width="18" Height="18" />
+                <TextBlock Text="Mendrain" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <NavigationView
+            x:Name="Nav"
+            Grid.Row="1"
+            PaneDisplayMode="LeftCompact"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="False"
+            IsPaneToggleButtonVisible="True"
+            IsTitleBarAutoPaddingEnabled="False"
+            OpenPaneLength="220"
+            SelectionChanged="Nav_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Home" Tag="Home" ToolTipService.ToolTip="Home">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource GlyphHome}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Batch Extract" Tag="Batch" ToolTipService.ToolTip="Batch Extract">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource GlyphBatch}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Create ZIP" Tag="CreateZip" ToolTipService.ToolTip="Create ZIP">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource GlyphCompress}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem Content="Settings" Tag="Settings" ToolTipService.ToolTip="Settings">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{StaticResource GlyphSettings}" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
+
+            <Frame x:Name="ContentFrame" Navigated="ContentFrame_Navigated">
+                <Frame.ContentTransitions>
+                    <TransitionCollection>
+                        <NavigationThemeTransition>
+                            <NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                                <EntranceNavigationTransitionInfo />
+                            </NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                        </NavigationThemeTransition>
+                    </TransitionCollection>
+                </Frame.ContentTransitions>
+            </Frame>
+        </NavigationView>
+    </Grid>
+</Window>

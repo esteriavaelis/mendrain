@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>Mendrain</RootNamespace>
+    <AssemblyName>Mendrain</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\Mendrain.ico</ApplicationIcon>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">win-arm64</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <UseWinUI>true</UseWinUI>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>preview</LangVersion>
+
+    <!-- Unpackaged, self-contained: runs from a folder without installing the Windows App SDK runtime or .NET. -->
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+
+    <Version>0.1.0</Version>
+    <Product>Mendrain</Product>
+    <Description>A modern archive utility for Windows</Description>
+    <Authors>Esteria Vaelis</Authors>
+    <Copyright>© 2026 Esteria Vaelis</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Windows App SDK 2.5.1 component packages (the versions the Microsoft.WindowsAppSDK 2.5.1 metapackage pins).
+      Referenced individually so the AI/ML/Search/Widgets components, ~45 MB that Mendrain never uses, are not shipped.
+    -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.12" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.1.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mendrain.Core\Mendrain.Core.csproj" />
+  </ItemGroup>
+
+  <!--
+    Unpackaged publish does not copy the app's own resource index (Mendrain.pri, which holds the compiled XAML),
+    and the published app then fails at startup with a XamlParseException. Copy it explicitly.
+  -->
+  <Target Name="CopyAppPriToPublishDir" AfterTargets="Publish">
+    <Copy SourceFiles="$(OutDir)$(TargetName).pri" DestinationFolder="$(PublishDir)" Condition="Exists('$(OutDir)$(TargetName).pri')" />
+    <Error Text="$(TargetName).pri is missing from the publish output." Condition="!Exists('$(PublishDir)$(TargetName).pri')" />
+  </Target>
+
+</Project>

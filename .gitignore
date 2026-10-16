@@ -1,0 +1,54 @@
+# ---- .NET build output ----
+bin/
+obj/
+# Release packages (portable ZIP, installer, publish folders) are built by tools/package.ps1
+# and distributed through GitHub Releases, never committed.
+artifacts/
+installer/Output/
+
+# ---- Tests ----
+TestResults/
+*.trx
+coverage*.xml
+*.coverage
+
+# ---- IDEs and editors ----
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+*.DotSettings.user
+.vscode/*
+!.vscode/extensions.json
+
+# ---- Private development material (kept locally, not published) ----
+CLAUDE.md
+.claude/
+tests/
+tools/make_fixtures.py
+docs/research-winrar.md
+
+# ---- Local / machine-specific ----
+*.env
+.env*
+launchSettings.local.json
+
+# ---- Logs, dumps, temporary files ----
+*.log
+*.dmp
+*.tmp
+*.partial
+.mendrain-*.partial/
+
+# ---- Python tooling (tools/*.py) ----
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ---- OS ----
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store

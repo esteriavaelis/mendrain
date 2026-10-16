@@ -1,0 +1,91 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Mendrain design tokens. Colors build on the Fluent theme brushes so light and dark themes,
+        high contrast and system settings keep working; only the accent is Mendrain's own teal.
+    -->
+
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="DropZoneBackgroundBrush" Color="#0A0A7C86" />
+            <SolidColorBrush x:Key="DropZoneActiveBackgroundBrush" Color="#1F0A7C86" />
+            <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="#660A7C86" />
+            <SolidColorBrush x:Key="IconTileBackgroundBrush" Color="#140A7C86" />
+            <SolidColorBrush x:Key="IconTileForegroundBrush" Color="#FF006069" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="DropZoneBackgroundBrush" Color="#0F5CC3CA" />
+            <SolidColorBrush x:Key="DropZoneActiveBackgroundBrush" Color="#265CC3CA" />
+            <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="#805CC3CA" />
+            <SolidColorBrush x:Key="IconTileBackgroundBrush" Color="#1F5CC3CA" />
+            <SolidColorBrush x:Key="IconTileForegroundBrush" Color="#FF9BE0E4" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="HighContrast">
+            <SolidColorBrush x:Key="DropZoneBackgroundBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="DropZoneActiveBackgroundBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="DropZoneStrokeBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="IconTileBackgroundBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="IconTileForegroundBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!-- Accent ramp (overrides the system accent inside the app) -->
+    <Color x:Key="SystemAccentColorDark3">#FF00363B</Color>
+    <Color x:Key="SystemAccentColorDark2">#FF004B52</Color>
+    <Color x:Key="SystemAccentColorDark1">#FF006069</Color>
+    <Color x:Key="SystemAccentColor">#FF0A7C86</Color>
+    <Color x:Key="SystemAccentColorLight1">#FF2E9AA3</Color>
+    <Color x:Key="SystemAccentColorLight2">#FF5CC3CA</Color>
+    <Color x:Key="SystemAccentColorLight3">#FF9BE0E4</Color>
+    <Color x:Key="BrandColor">#FF0A7C86</Color>
+
+
+    <!-- Spacing (4px grid) -->
+    <x:Double x:Key="SpaceXS">4</x:Double>
+    <x:Double x:Key="SpaceS">8</x:Double>
+    <x:Double x:Key="SpaceM">12</x:Double>
+    <x:Double x:Key="SpaceL">16</x:Double>
+    <x:Double x:Key="SpaceXL">24</x:Double>
+    <x:Double x:Key="SpaceXXL">32</x:Double>
+    <Thickness x:Key="PagePadding">36,24,36,28</Thickness>
+    <Thickness x:Key="CardPadding">20,16,20,16</Thickness>
+    <Thickness x:Key="RowPadding">12,8,12,8</Thickness>
+    <x:Double x:Key="PageMaxWidth">1100</x:Double>
+
+    <!-- Shape -->
+    <CornerRadius x:Key="CardCornerRadius">8</CornerRadius>
+    <CornerRadius x:Key="TileCornerRadius">6</CornerRadius>
+    <CornerRadius x:Key="PillCornerRadius">10</CornerRadius>
+    <Thickness x:Key="CardBorderThickness">1</Thickness>
+
+    <!-- Icon sizes -->
+    <x:Double x:Key="IconSizeS">14</x:Double>
+    <x:Double x:Key="IconSizeM">16</x:Double>
+    <x:Double x:Key="IconSizeL">20</x:Double>
+    <x:Double x:Key="IconSizeXL">28</x:Double>
+    <x:Double x:Key="IconSizeHero">40</x:Double>
+
+    <!-- Glyphs (Segoe Fluent Icons / Segoe MDL2 Assets via SymbolThemeFontFamily) -->
+    <x:String x:Key="GlyphHome">&#xE80F;</x:String>
+    <x:String x:Key="GlyphArchive">&#xE7B8;</x:String>
+    <x:String x:Key="GlyphOpen">&#xE8E5;</x:String>
+    <x:String x:Key="GlyphFolder">&#xF12B;</x:String>
+    <x:String x:Key="GlyphFolderOpen">&#xED25;</x:String>
+    <x:String x:Key="GlyphFile">&#xE7C3;</x:String>
+    <x:String x:Key="GlyphAdd">&#xE710;</x:String>
+    <x:String x:Key="GlyphRemove">&#xE738;</x:String>
+    <x:String x:Key="GlyphDelete">&#xE74D;</x:String>
+    <x:String x:Key="GlyphClose">&#xE711;</x:String>
+    <x:String x:Key="GlyphExtract">&#xE896;</x:String>
+    <x:String x:Key="GlyphCompress">&#xE898;</x:String>
+    <x:String x:Key="GlyphBatch">&#xE8FD;</x:String>
+    <x:String x:Key="GlyphSettings">&#xE713;</x:String>
+    <x:String x:Key="GlyphBack">&#xE72B;</x:String>
+    <x:String x:Key="GlyphUp">&#xE74A;</x:String>
+    <x:String x:Key="GlyphLock">&#xE72E;</x:String>
+    <x:String x:Key="GlyphHistory">&#xE81C;</x:String>
+    <x:String x:Key="GlyphInfo">&#xE946;</x:String>
+    <x:String x:Key="GlyphTheme">&#xE790;</x:String>
+</ResourceDictionary>
