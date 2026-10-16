@@ -62,12 +62,11 @@ Neither download needs .NET or any other runtime installed: everything Mendrain 
 
 ## System requirements
 
-- Windows 10 version 1809 (build 17763) or later, or Windows 11
+- Windows 10 or later
 - 64-bit (x64) PC
 - About 175 MB of disk space
 
-Mendrain has been tested on Windows 10 22H2 (x64). Windows 11 should work but hasn't been tested yet,
-and the Mica window background only appears there.
+Mendrain has been tested on Windows 10 22H2 (x64). Windows 11 should work but hasn't been tested yet.
 
 ## Usage
 

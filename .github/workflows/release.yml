@@ -1,0 +1,76 @@
+name: Release
+
+# Pushing a tag such as v1.0.0 builds and packages Mendrain and creates a DRAFT GitHub Release
+# with the installer and portable ZIP attached. Nothing is published until the owner reviews the draft
+# and clicks "Publish release".
+# "Run workflow" (workflow_dispatch) builds the same packages as downloadable workflow artifacts only.
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up .NET (version from global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -eq "tag") {
+            $v = $env:GITHUB_REF_NAME.TrimStart("v")
+            if ($v -notmatch '^\d+\.\d+\.\d+$') { throw "Tag '$env:GITHUB_REF_NAME' must look like v1.2.3." }
+          } else {
+            [xml]$proj = Get-Content src/Mendrain/Mendrain.csproj
+            $v = ($proj.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Install Inno Setup if missing
+        shell: pwsh
+        run: |
+          $paths = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+          if (-not ($paths | Where-Object { Test-Path $_ })) {
+            choco install innosetup --no-progress -y
+            if ($LASTEXITCODE -ne 0) { throw "Installing Inno Setup failed." }
+          }
+
+      - name: Package
+        shell: pwsh
+        run: ./tools/package.ps1 -Version "${{ steps.version.outputs.version }}" -RequireInstaller
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mendrain-${{ steps.version.outputs.version }}
+          path: |
+            artifacts/Mendrain-Setup-x64.exe
+            artifacts/Mendrain-Portable-x64.zip
+            artifacts/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Create draft GitHub Release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$env:GITHUB_REF_NAME" `
+            artifacts/Mendrain-Setup-x64.exe `
+            artifacts/Mendrain-Portable-x64.zip `
+            artifacts/SHA256SUMS.txt `
+            --draft `
+            --title "Mendrain ${{ steps.version.outputs.version }}" `
+            --generate-notes
