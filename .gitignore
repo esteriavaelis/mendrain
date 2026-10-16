@@ -25,7 +25,6 @@ coverage*.xml
 # ---- Private development material (kept locally, not published) ----
 CLAUDE.md
 .claude/
-tests/
 tools/make_fixtures.py
 docs/research-winrar.md
 
