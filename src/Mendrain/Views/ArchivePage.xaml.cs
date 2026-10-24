@@ -1,3 +1,4 @@
+using Mendrain.Helpers;
 using Mendrain.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -19,7 +20,27 @@ public sealed partial class ArchivePage : Page
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         if (e.Parameter is string path)
+        {
             await ViewModel.LoadAsync(path);
+        }
+        else if (e.Parameter is ArchiveExtractRequest request)
+        {
+            // From the Explorer menu: the same steps as clicking Extract, with the destination preset.
+            try
+            {
+                await ViewModel.LoadAsync(request.Path);
+                if (ViewModel.IsLoaded)
+                {
+                    if (request.Here)
+                        ViewModel.DestinationName = "";
+                    await ViewModel.ExtractCommand.ExecuteAsync(null);
+                }
+            }
+            finally
+            {
+                request.Done.TrySetResult();
+            }
+        }
     }
 
     private void Back_Click(object sender, RoutedEventArgs e) => App.MainWindow.Navigate("Home");

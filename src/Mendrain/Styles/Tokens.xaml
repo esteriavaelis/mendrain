@@ -88,4 +88,7 @@
     <x:String x:Key="GlyphHistory">&#xE81C;</x:String>
     <x:String x:Key="GlyphInfo">&#xE946;</x:String>
     <x:String x:Key="GlyphTheme">&#xE790;</x:String>
+    <x:String x:Key="GlyphUpdate">&#xE895;</x:String>
+    <x:String x:Key="GlyphShow">&#xE7B3;</x:String>
+    <x:String x:Key="GlyphChevronDown">&#xE70D;</x:String>
 </ResourceDictionary>

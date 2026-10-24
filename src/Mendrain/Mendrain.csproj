@@ -16,6 +16,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>preview</LangVersion>
+    <!-- Program.cs provides Main: it handles installer switches and forwards Explorer requests to a running instance. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <!-- Test builds only (-p:UpdateFeedOverride=true): MENDRAIN_UPDATE_FEED may point updates at a local folder. -->
+    <DefineConstants Condition="'$(UpdateFeedOverride)' == 'true'">$(DefineConstants);UPDATE_FEED_OVERRIDE</DefineConstants>
 
     <!-- Unpackaged, self-contained: runs from a folder without installing the Windows App SDK runtime or .NET. -->
     <WindowsPackageType>None</WindowsPackageType>
@@ -23,7 +27,7 @@
     <SelfContained>true</SelfContained>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Product>Mendrain</Product>
     <Description>A modern archive utility for Windows</Description>
     <Authors>Esteria Vaelis</Authors>
@@ -44,6 +48,8 @@
     <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
     <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.1.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <!-- Installer and self-updates (Velopack). Keep in step with the vpk tool in dotnet-tools.json. -->
+    <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
 
   <ItemGroup>

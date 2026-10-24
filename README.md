@@ -30,8 +30,11 @@
   Folder-name clashes are detected before anything is written, and one broken archive doesn't stop the rest.
 - **Create ZIP** — from any mix of files and folders, with four compression levels.
 - **Passwords** — asks when an archive is encrypted and tells you clearly when a password is wrong.
+  Optionally saves passwords (encrypted for your Windows account) and offers them in a dropdown next time.
 - **Safe by design** — files can't be written outside the folder you chose, links are never extracted,
   and existing files are never replaced without your confirmation.
+- **File Explorer menu** — right-click ZIP, 7Z and RAR files for *Mendrain → Open with Mendrain / Extract Here /
+  Extract to Folder / Batch Extract*, without changing your default archive app.
 - Drag and drop, recent archives, and light, dark or system theme.
 
 ## Screenshots
@@ -49,16 +52,28 @@ Get the latest version from the
 
 | File | What it is |
 |---|---|
-| `Mendrain-Setup-x64.exe` | **Installer** (recommended). Installs for your user account only, without administrator rights, into `%LOCALAPPDATA%\Programs\Mendrain`. Adds a Start menu shortcut (and optionally a desktop shortcut) and can be removed from *Settings → Apps*. |
-| `Mendrain-Portable-x64.zip` | **Portable version.** Unzip anywhere and run `Mendrain\Mendrain.exe`. Nothing is installed. |
+| `Mendrain-Setup-x64.exe` | **Installer** (recommended). One click, no questions: installs for your user account only, without administrator rights, into `%LOCALAPPDATA%\MendrainApp`, adds a Start menu shortcut and the File Explorer menu, and can be removed from *Settings → Apps*. Updates itself. |
+| `Mendrain-Portable-x64.zip` | **Portable version.** Unzip anywhere and run `Mendrain.exe`. Nothing is installed. Also updates itself (in its own folder). |
 
 Neither download needs .NET or any other runtime installed: everything Mendrain needs is included.
 
 **Notes**
 - The downloads are **not code-signed**, so Windows SmartScreen may show "Windows protected your PC".
   Choose *More info → Run anyway* if you trust the source. `SHA256SUMS.txt` on each release lets you verify the files.
-- The portable version still stores its preferences and recent-archives list in `%LOCALAPPDATA%\Mendrain`,
-  not next to the program.
+- The portable version still stores its preferences, recent-archives list and saved passwords in
+  `%LOCALAPPDATA%\Mendrain`, not next to the program.
+- **Updates:** a few seconds after it starts, Mendrain checks this repository's GitHub Releases (once per session)
+  for a newer stable version. If there is one, a small bar offers **Update** or **Later**; nothing is downloaded
+  or installed unless you click Update, and the new version is applied only when you click **Restart now**.
+  *Settings → Updates* has *Check for updates* and an opt-in for preview versions. Settings, saved passwords and
+  logs live outside the program folder and are kept. Packages are verified against the checksums in the
+  release's update feed before they are installed.
+- **Upgrading from 0.1.0:** version 0.1.0 used a different installer and can't update itself. Download and run
+  the new `Mendrain-Setup-x64.exe` once. Mendrain then offers to remove the old copy (*Remove old version*);
+  your settings are kept. Copies of 0.1.0's portable ZIP must be replaced by hand.
+- Saved passwords are kept in `%LOCALAPPDATA%\Mendrain\passwords.json`, each encrypted with Windows DPAPI
+  for your Windows user account; only archive names and dates are stored in readable form. They can't be
+  read by other Windows accounts or on another PC, and are never sent anywhere.
 
 ## System requirements
 
@@ -77,6 +92,28 @@ Mendrain has been tested on Windows 10 22H2 (x64). Windows 11 should work but ha
   *Add archives*), choose a destination, then click **Extract all**. Each archive goes into
   `<destination>\<archive name>`. If a folder name is already taken, Mendrain asks whether to use a new name
   (for example `Project (2)`) or skip that archive.
+- **Passwords:** when an archive is encrypted, Mendrain asks for its password. The arrow at the right of the
+  password field lists saved passwords by archive name (never the password itself); pick one to fill the field,
+  or remove it with its delete button (or the Delete key). Tick **Save password** to keep a password: it is
+  saved only after it has worked. In Batch Extract, a password saved for an archive with the same file name is
+  tried automatically before asking; a password that already failed for an archive is not tried again.
+  *Settings → Saved passwords → Remove all* forgets every saved password.
+- **From File Explorer:** right-click one or more ZIP, 7Z or RAR files and open the **Mendrain** submenu
+  (on Windows 11, choose *Show more options* first):
+  - *Open with Mendrain* — opens the archive (several archives go to Batch Extract, ready to start).
+  - *Extract Here* — extracts into the folder that contains the archive, exactly like clicking **Extract** with
+    an empty folder name: if files already exist, Mendrain asks whether to keep both, skip or replace.
+  - *Extract to Folder* — extracts into a folder named after the archive (`Photos.zip` → `Photos\`), next to it.
+  - *Batch Extract* — extracts every selected archive, one at a time, each into its own folder next to the
+    archives, with the usual conflict check, password prompts and summary. With only one archive selected it
+    behaves the same (that archive goes into its own new folder).
+
+  With several archives selected, *Extract Here* and *Extract to Folder* handle them one after another.
+  Selected files that aren't ZIP, 7Z or RAR archives are ignored, and Mendrain says so. If Mendrain is already
+  open, the request goes to that window and starts after any extraction that is still running.
+  The installer adds the menu, and updates keep it pointing at the installed program. For the portable
+  version, or to repair the entries, use *Settings → File Explorer menu*. Removing it there (an update won't
+  add it back), or uninstalling, deletes only Mendrain's own entries.
 - **Create a ZIP:** drop files and folders on the home screen (or open *Create ZIP*), pick a name and
   location, then click **Create ZIP**. Selected files go at the top of the ZIP; selected folders keep their
   name and everything inside them.
@@ -97,6 +134,11 @@ Limitations:
 - No RAR/7Z creation, no password-protected ZIP creation, no self-extracting archives, no archive repair.
 - File contents, folders and modification dates are restored. NTFS permissions and alternate data streams are not.
 - For 7Z archives, a wrong password can't be told apart from damaged data; Mendrain says so in the message.
+- The File Explorer menu uses classic menu entries. On Windows 11 they appear under *Show more options*, not in
+  the compact menu (that would need a packaged, code-signed app). The menu reads "Extract to Folder" instead of
+  showing each archive's name, which would need a native shell extension.
+- The Explorer menu was tested on Windows 10 22H2. Windows 11 hasn't been tested.
+- Neither the installer nor the program is code-signed yet, so Windows SmartScreen may warn on first run.
 
 ## How extraction stays safe
 
@@ -122,14 +164,14 @@ cd mendrain
 dotnet run --project src/Mendrain         # start the app (Debug)
 ```
 
-To build the release packages (portable ZIP, plus the installer if
-[Inno Setup 6](https://jrsoftware.org/isinfo.php) is installed):
+To build the release packages (installer, portable ZIP and update feed, made with
+[Velopack](https://velopack.io); the `vpk` tool is restored automatically from `dotnet-tools.json`):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools/package.ps1
 ```
 
-Output goes to `artifacts/`. See [installer/README.md](installer/README.md) for installer details.
+Output goes to `artifacts/`. See [installer/README.md](installer/README.md) for installer, update and release details.
 Releases are built by GitHub Actions when a version tag such as `v1.0.0` is pushed; the workflow creates a
 draft release for review.
 

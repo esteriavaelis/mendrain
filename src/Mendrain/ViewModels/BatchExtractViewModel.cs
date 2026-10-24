@@ -13,7 +13,7 @@ namespace Mendrain.ViewModels;
 
 public sealed partial class BatchExtractViewModel : ObservableObject
 {
-    private readonly BatchExtractService _service = new();
+    private readonly BatchExtractService _service = new(savedPasswords: App.Settings.Passwords);
     private CancellationTokenSource? _cts;
     private List<ArchiveJob> _runSet = [];
     private ArchiveJob? _current;
@@ -213,6 +213,34 @@ public sealed partial class BatchExtractViewModel : ObservableObject
     [RelayCommand]
     private void Cancel() => _cts?.Cancel();
 
+    /// <summary>
+    /// "Batch Extract" from the Explorer menu: extracts the archives, each into its own folder next to the first one,
+    /// through the normal queue (conflict dialog, passwords, summary). If the user had archives waiting in the queue,
+    /// the selection is only added and nothing starts by itself.
+    /// </summary>
+    public async Task ExtractFromExplorerAsync(IReadOnlyList<string> archives)
+    {
+        if (IsRunning || archives.Count == 0)
+            return;
+        // An archive that already ran in this session is queued again rather than skipped as a duplicate.
+        var requested = new HashSet<string>(archives.Select(Path.GetFullPath), StringComparer.OrdinalIgnoreCase);
+        foreach (var finished in Jobs.Where(j => j.Status != JobStatus.Ready && requested.Contains(j.SourcePath)).ToList())
+            Jobs.Remove(finished);
+        var othersWaiting = Jobs.Any(j => j.Status == JobStatus.Ready);
+        IsSummaryOpen = false;
+        if (!othersWaiting)
+            Destination = Path.GetDirectoryName(archives[0]) ?? "";
+        AddPaths(archives);
+        App.MainWindow.Navigate("Batch");
+        if (othersWaiting)
+        {
+            NoticeText = "The selected archives were added to the queue, which already had archives waiting. Check the destination, then click Extract all.";
+            IsNoticeOpen = true;
+            return;
+        }
+        await ExtractAllCommand.ExecuteAsync(null);
+    }
+
     private async Task<bool> ResolveConflictsAsync(IReadOnlyList<DestinationConflict> conflicts)
     {
         var lines = conflicts.Take(6).Select(c => c.Kind == ConflictKind.AlreadyExists
@@ -255,8 +283,8 @@ public sealed partial class BatchExtractViewModel : ObservableObject
         }
     }
 
-    private static Task<string?> AskPasswordAsync(PasswordRequest request) =>
-        Dialogs.PasswordAsync(request.Job.FileName, request.Attempt == 1 ? null : request.Reason, "Skip archive");
+    private static Task<PasswordAnswer?> AskPasswordAsync(PasswordRequest request) =>
+        Dialogs.PasswordAsync(request.Job.FileName, request.Reason, "Skip archive");
 
     private void ShowSummary(BatchSummary summary)
     {
