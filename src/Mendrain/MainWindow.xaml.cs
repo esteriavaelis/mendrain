@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Mendrain.Core;
 using Mendrain.Helpers;
+using Mendrain.ViewModels;
 using Mendrain.Views;
 using Microsoft.UI;
 using Microsoft.UI.Composition.SystemBackdrops;
@@ -55,10 +56,38 @@ public sealed partial class MainWindow : Window
         AppWindow.Closing += AppWindow_Closing;
 
         Navigate("Home");
+        LegacyBar.IsOpen = App.Updates.CanUpdate && LegacyInstall.FindUninstaller() is not null;
+    }
+
+    public UpdateViewModel Updates => App.Updates;
+
+    private async void RemoveLegacy_Click(object sender, RoutedEventArgs e)
+    {
+        RemoveLegacyButton.IsEnabled = false;
+        if (await LegacyInstall.RemoveAsync())
+        {
+            LegacyBar.IsOpen = false;
+            return;
+        }
+        RemoveLegacyButton.IsEnabled = true;
+        await Dialogs.MessageAsync("Old version not removed",
+            "The previous Mendrain is still installed. You can remove it in Windows Settings → Apps (it is listed as “Mendrain”, version 0.1).");
     }
 
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(nint hwnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(nint hwnd);
+
+    /// <summary>Restores and activates the window, e.g. when a request arrives from Explorer.</summary>
+    public void BringToFront()
+    {
+        if (AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
+            presenter.Restore();
+        Activate();
+        SetForegroundWindow(WinRT.Interop.WindowNative.GetWindowHandle(this));
+    }
 
     public void ApplyTheme(ElementTheme theme)
     {

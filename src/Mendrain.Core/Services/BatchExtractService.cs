@@ -22,8 +22,16 @@ public enum ConflictResolution
 }
 
 /// <param name="Attempt">1 for the first prompt for this archive.</param>
-/// <param name="Reason">Why the password is needed, e.g. "The password is incorrect."</param>
-public sealed record PasswordRequest(ArchiveJob Job, int Attempt, string Reason);
+/// <param name="Reason">Why the previous password did not work, e.g. "The password is incorrect."; null when none was tried yet.</param>
+public sealed record PasswordRequest(ArchiveJob Job, int Attempt, string? Reason);
+
+/// <summary>A password the user entered or picked.</summary>
+/// <param name="Save">Save the password once it has been shown to work.</param>
+public sealed record PasswordAnswer(string Password, bool Save = false)
+{
+    /// <summary>Never reveals the password (e.g. in logs or the debugger).</summary>
+    public override string ToString() => $"PasswordAnswer {{ Save = {Save} }}";
+}
 
 public sealed record BatchSummary(
     int Total, int Completed, int Skipped, int Failed, int Cancelled, int CompletedWithWarnings,
@@ -40,14 +48,23 @@ public sealed record BatchSummary(
 public sealed class BatchExtractService
 {
     public const int MaxPasswordAttempts = 3;
+    public const string AlreadyTriedMessage = "That password was already tried for this archive and did not work.";
+    public const string SavedPasswordFailedMessage = "The password saved for this archive did not work.";
 
     private readonly Func<ExtractRequest, IProgress<ExtractProgress>?, CancellationToken, Task<ExtractResult>> _extract;
+    private readonly SavedPasswordStore? _savedPasswords;
 
     /// <param name="extract">Replaces the extraction step (used by tests); defaults to <see cref="ArchiveService.ExtractAsync"/>.</param>
-    public BatchExtractService(Func<ExtractRequest, IProgress<ExtractProgress>?, CancellationToken, Task<ExtractResult>>? extract = null)
+    /// <param name="savedPasswords">
+    /// Passwords saved for an archive with the same file name are tried before asking, and passwords the user
+    /// asks to save are saved here once the archive extracted successfully.
+    /// </param>
+    public BatchExtractService(Func<ExtractRequest, IProgress<ExtractProgress>?, CancellationToken, Task<ExtractResult>>? extract = null,
+        SavedPasswordStore? savedPasswords = null)
     {
         var service = new ArchiveService();
         _extract = extract ?? service.ExtractAsync;
+        _savedPasswords = savedPasswords;
     }
 
     /// <summary>Raised when a job starts (with the job) and when the batch ends (with null).</summary>
@@ -115,7 +132,7 @@ public sealed class BatchExtractService
     public async Task<BatchSummary> RunAsync(
         IReadOnlyList<ArchiveJob> jobs,
         string destinationRoot,
-        Func<PasswordRequest, Task<string?>>? passwordProvider,
+        Func<PasswordRequest, Task<PasswordAnswer?>>? passwordProvider,
         CancellationToken cancellationToken)
     {
         if (!Directory.Exists(destinationRoot))
@@ -155,7 +172,7 @@ public sealed class BatchExtractService
         return Summarize(queue, clock.Elapsed);
     }
 
-    private async Task RunJobAsync(ArchiveJob job, string root, Func<PasswordRequest, Task<string?>>? passwordProvider,
+    private async Task RunJobAsync(ArchiveJob job, string root, Func<PasswordRequest, Task<PasswordAnswer?>>? passwordProvider,
         CancellationToken cancellationToken)
     {
         job.Status = JobStatus.Extracting;
@@ -164,7 +181,12 @@ public sealed class BatchExtractService
         CurrentJobChanged?.Invoke(job);
 
         string? password = null;
-        var attempts = 0;
+        var save = false;
+        var fromSaved = false;
+        var prompts = 0;
+        // Passwords that failed for this archive are never tried (or asked for) again in this run.
+        var failed = new HashSet<string>(StringComparer.Ordinal);
+        var saved = new Queue<SavedPassword>(_savedPasswords?.FindFor(job.SourcePath) ?? []);
         while (true)
         {
             try
@@ -180,25 +202,55 @@ public sealed class BatchExtractService
                 job.Progress = 1;
                 job.Status = JobStatus.Completed;
                 job.Message = Describe(result);
+                // Saved only now: the archive extracted with it, so the password is known to be right.
+                if (save && password is not null && _savedPasswords?.Save(job.FileName, password) == false)
+                    job.Message += " · The password could not be saved";
                 return;
             }
             catch (ArchiveError error) when (error.Kind is ArchiveErrorKind.PasswordRequired or ArchiveErrorKind.WrongPassword
-                                             && passwordProvider is not null && attempts < MaxPasswordAttempts
                                              && !cancellationToken.IsCancellationRequested)
             {
-                attempts++;
-                password = await passwordProvider(new PasswordRequest(job, attempts, error.Message));
-                if (cancellationToken.IsCancellationRequested)
+                if (password is not null)
+                    failed.Add(password);
+                string? reason = error.Kind != ArchiveErrorKind.WrongPassword ? null
+                    : fromSaved ? SavedPasswordFailedMessage
+                    : error.Message;
+
+                // Saved passwords for an archive of this name go first, without asking; the extraction itself validates them.
+                if (NextSavedPassword(saved, failed) is { } next)
                 {
-                    MarkCancelled(job);
-                    return;
+                    (password, save, fromSaved) = (next, false, true);
+                    continue;
                 }
-                if (string.IsNullOrEmpty(password))
+
+                PasswordAnswer? answer = null;
+                while (answer is null)
                 {
-                    job.Status = JobStatus.Skipped;
-                    job.Message = "No password was entered.";
-                    return;
+                    if (passwordProvider is null || prompts >= MaxPasswordAttempts)
+                    {
+                        Fail(job, reason ?? error.Message);
+                        return;
+                    }
+                    prompts++;
+                    answer = await passwordProvider(new PasswordRequest(job, prompts, reason));
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        MarkCancelled(job);
+                        return;
+                    }
+                    if (string.IsNullOrEmpty(answer?.Password))
+                    {
+                        job.Status = JobStatus.Skipped;
+                        job.Message = "No password was entered.";
+                        return;
+                    }
+                    if (failed.Contains(answer.Password))
+                    {
+                        answer = null;
+                        reason = AlreadyTriedMessage;
+                    }
                 }
+                (password, save, fromSaved) = (answer.Password, answer.Save, false);
             }
             catch (Exception ex)
             {
@@ -221,6 +273,23 @@ public sealed class BatchExtractService
                 return;
             }
         }
+    }
+
+    private string? NextSavedPassword(Queue<SavedPassword> saved, HashSet<string> failed)
+    {
+        while (saved.TryDequeue(out var entry))
+        {
+            if (_savedPasswords!.Reveal(entry.Id) is { } candidate && !failed.Contains(candidate))
+                return candidate;
+        }
+        return null;
+    }
+
+    private static void Fail(ArchiveJob job, string message)
+    {
+        job.Progress = null;
+        job.Status = JobStatus.Failed;
+        job.Message = message;
     }
 
     private static void MarkCancelled(ArchiveJob job)

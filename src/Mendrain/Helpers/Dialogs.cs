@@ -1,3 +1,5 @@
+using Mendrain.Core.Services;
+using Mendrain.Views;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -47,41 +49,13 @@ public static class Dialogs
         return await ShowAsync(dialog) == ContentDialogResult.Primary;
     }
 
-    /// <summary>Asks for an archive password. Returns null when the user cancels or skips.</summary>
-    public static async Task<string?> PasswordAsync(string archiveName, string? reason, string cancelText = "Cancel")
+    /// <summary>
+    /// Asks for an archive password, offering saved passwords. Returns null when the user cancels or skips.
+    /// <paramref name="reason"/> explains why the previous password did not work (null on the first prompt).
+    /// </summary>
+    public static async Task<PasswordAnswer?> PasswordAsync(string archiveName, string? reason, string cancelText = "Cancel")
     {
-        var box = new PasswordBox { PlaceholderText = "Password", Margin = new Thickness(0, 12, 0, 0) };
-        var panel = new StackPanel { Spacing = 4, MinWidth = 340 };
-        panel.Children.Add(new TextBlock
-        {
-            Text = $"“{archiveName}” is encrypted.",
-            TextWrapping = TextWrapping.Wrap,
-        });
-        if (!string.IsNullOrEmpty(reason) && reason.Contains("incorrect", StringComparison.OrdinalIgnoreCase))
-        {
-            panel.Children.Add(new InfoBar
-            {
-                Severity = InfoBarSeverity.Error,
-                IsOpen = true,
-                IsClosable = false,
-                Message = reason,
-                Margin = new Thickness(0, 8, 0, 0),
-            });
-        }
-        panel.Children.Add(box);
-
-        var dialog = new ContentDialog
-        {
-            Title = "Enter password",
-            Content = panel,
-            PrimaryButtonText = "OK",
-            CloseButtonText = cancelText,
-            DefaultButton = ContentDialogButton.Primary,
-            IsPrimaryButtonEnabled = false,
-        };
-        box.PasswordChanged += (_, _) => dialog.IsPrimaryButtonEnabled = box.Password.Length > 0;
-        dialog.Opened += (_, _) => box.Focus(FocusState.Programmatic);
-
-        return await ShowAsync(dialog) == ContentDialogResult.Primary ? box.Password : null;
+        var dialog = new PasswordDialog(archiveName, reason, cancelText, App.Settings.Passwords);
+        return await ShowAsync(dialog) == ContentDialogResult.Primary ? dialog.Answer : null;
     }
 }

@@ -180,7 +180,7 @@ public class BatchExtractTests
     {
         using var temp = new TempDir();
         var requests = new List<PasswordRequest>();
-        var answers = new Queue<string?>(["wrong", Fixtures.Password]);
+        var answers = new Queue<PasswordAnswer?>([new("wrong"), new(Fixtures.Password)]);
         var jobs = Jobs("encrypted.rar", "sample.zip");
 
         await new BatchExtractService().RunAsync(jobs, temp.Path, r => { requests.Add(r); return Task.FromResult(answers.Dequeue()); },
@@ -197,7 +197,7 @@ public class BatchExtractTests
     {
         using var temp = new TempDir();
         var jobs = Jobs("encrypted.7z", "sample.zip");
-        var summary = await new BatchExtractService().RunAsync(jobs, temp.Path, _ => Task.FromResult<string?>(null), CancellationToken.None);
+        var summary = await new BatchExtractService().RunAsync(jobs, temp.Path, _ => Task.FromResult<PasswordAnswer?>(null), CancellationToken.None);
         Assert.Equal([JobStatus.Skipped, JobStatus.Completed], jobs.Select(j => j.Status));
         Assert.Contains("No password", jobs[0].Message);
         Assert.Equal(1, summary.Skipped);
@@ -210,7 +210,7 @@ public class BatchExtractTests
         using var temp = new TempDir();
         var prompts = 0;
         var jobs = Jobs("encrypted-zipcrypto.zip");
-        await new BatchExtractService().RunAsync(jobs, temp.Path, _ => { prompts++; return Task.FromResult<string?>("nope"); }, CancellationToken.None);
+        await new BatchExtractService().RunAsync(jobs, temp.Path, _ => { prompts++; return Task.FromResult<PasswordAnswer?>(new("nope")); }, CancellationToken.None);
         Assert.Equal(JobStatus.Failed, jobs[0].Status);
         Assert.Equal(BatchExtractService.MaxPasswordAttempts, prompts);
         Assert.Contains("password", jobs[0].Message, StringComparison.OrdinalIgnoreCase);

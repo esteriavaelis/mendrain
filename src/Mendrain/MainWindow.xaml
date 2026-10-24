@@ -2,6 +2,7 @@
     x:Class="Mendrain.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:h="using:Mendrain.Helpers"
     Title="Mendrain">
 
     <Grid x:Name="Root" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
@@ -53,17 +54,67 @@
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
 
-            <Frame x:Name="ContentFrame" Navigated="ContentFrame_Navigated">
-                <Frame.ContentTransitions>
-                    <TransitionCollection>
-                        <NavigationThemeTransition>
-                            <NavigationThemeTransition.DefaultNavigationTransitionInfo>
-                                <EntranceNavigationTransitionInfo />
-                            </NavigationThemeTransition.DefaultNavigationTransitionInfo>
-                        </NavigationThemeTransition>
-                    </TransitionCollection>
-                </Frame.ContentTransitions>
-            </Frame>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <StackPanel>
+                    <!-- Update notification: compact, never modal; "Later" hides it for this session. -->
+                    <InfoBar
+                        MaxWidth="{StaticResource PageMaxWidth}"
+                        Margin="36,12,36,0"
+                        IsClosable="False"
+                        Severity="Informational"
+                        IsOpen="{x:Bind Updates.IsBannerOpen, Mode=OneWay}"
+                        Title="{x:Bind Updates.BannerTitle, Mode=OneWay}"
+                        Message="{x:Bind Updates.BannerMessage, Mode=OneWay}">
+                        <StackPanel Spacing="{StaticResource SpaceS}" Margin="0,0,0,12">
+                            <ProgressBar Maximum="100" Value="{x:Bind Updates.DownloadPercent, Mode=OneWay}"
+                                         Visibility="{x:Bind h:Format.Show(Updates.IsDownloading), Mode=OneWay}"
+                                         AutomationProperties.Name="Update download progress" />
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource SpaceS}">
+                                <Button Content="Update" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind Updates.DownloadCommand}"
+                                        Visibility="{x:Bind h:Format.Show(Updates.CanDownload), Mode=OneWay}" />
+                                <Button Content="Restart now" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind Updates.RestartCommand}"
+                                        Visibility="{x:Bind h:Format.Show(Updates.IsReady), Mode=OneWay}" />
+                                <Button Content="Cancel" Command="{x:Bind Updates.CancelDownloadCommand}"
+                                        Visibility="{x:Bind h:Format.Show(Updates.IsDownloading), Mode=OneWay}"
+                                        AutomationProperties.Name="Cancel update download" />
+                                <Button Content="Later" Command="{x:Bind Updates.LaterCommand}"
+                                        Visibility="{x:Bind h:Format.Hide(Updates.IsDownloading), Mode=OneWay}"
+                                        AutomationProperties.Name="Remind me later" />
+                            </StackPanel>
+                        </StackPanel>
+                    </InfoBar>
+
+                    <!-- Shown when this copy can update itself while the 0.1 (Inno Setup) copy is still installed. -->
+                    <InfoBar
+                        x:Name="LegacyBar"
+                        MaxWidth="{StaticResource PageMaxWidth}"
+                        Margin="36,12,36,0"
+                        Severity="Informational"
+                        Title="An older Mendrain is still installed"
+                        Message="Mendrain 0.1 from the previous installer can't update itself. Remove it to keep just this copy. Your settings and saved passwords are kept.">
+                        <InfoBar.ActionButton>
+                            <Button x:Name="RemoveLegacyButton" Content="Remove old version" Click="RemoveLegacy_Click" />
+                        </InfoBar.ActionButton>
+                    </InfoBar>
+                </StackPanel>
+
+                <Frame x:Name="ContentFrame" Grid.Row="1" Navigated="ContentFrame_Navigated">
+                    <Frame.ContentTransitions>
+                        <TransitionCollection>
+                            <NavigationThemeTransition>
+                                <NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                                    <EntranceNavigationTransitionInfo />
+                                </NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                            </NavigationThemeTransition>
+                        </TransitionCollection>
+                    </Frame.ContentTransitions>
+                </Frame>
+            </Grid>
         </NavigationView>
     </Grid>
 </Window>

@@ -38,6 +38,10 @@ public sealed partial class ArchiveViewModel : ObservableObject
     private ArchiveFolder? _root;
     private ArchiveFolder? _current;
     private string? _password;
+    // Save _password once it has been shown to work (the user ticked "Save password").
+    private bool _savePassword;
+    // Passwords that did not work for this archive; never tried again.
+    private readonly HashSet<string> _failedPasswords = new(StringComparer.Ordinal);
     private CancellationTokenSource? _cts;
     private string? _lastDestination;
 
@@ -94,7 +98,6 @@ public sealed partial class ArchiveViewModel : ObservableObject
         try
         {
             ArchiveContents? contents = null;
-            string? reason = null;
             for (var attempt = 0; contents is null; attempt++)
             {
                 try
@@ -105,11 +108,11 @@ public sealed partial class ArchiveViewModel : ObservableObject
                                              && attempt < BatchExtractService.MaxPasswordAttempts)
                 {
                     // Names are encrypted too: a password is needed just to list this archive.
-                    reason = attempt == 0 ? null : e.Message;
+                    PasswordFailed();
                     IsLoading = false;
-                    _password = await Dialogs.PasswordAsync(FileName, reason);
+                    var answered = await AskPasswordAsync(e.Kind == ArchiveErrorKind.WrongPassword ? e.Message : null);
                     IsLoading = true;
-                    if (_password is null)
+                    if (!answered)
                         throw new ArchiveError(ArchiveErrorKind.PasswordRequired, "The archive's contents are encrypted. A password is needed to view them.");
                 }
             }
@@ -123,6 +126,9 @@ public sealed partial class ArchiveViewModel : ObservableObject
             NavigateTo("");
             IsLoaded = true;
             App.Settings.Recent.Add(contents.FilePath);
+            // Listing encrypted names succeeded, so the password is right.
+            if (SavePasswordIfRequested() is { } note)
+                ShowResult(InfoBarSeverity.Warning, "Password not saved", note);
         }
         catch (ArchiveError e)
         {
@@ -230,12 +236,8 @@ public sealed partial class ArchiveViewModel : ObservableObject
             }
         }
 
-        if (_contents.NeedsPassword && _password is null)
-        {
-            _password = await Dialogs.PasswordAsync(FileName, null);
-            if (_password is null)
-                return;
-        }
+        if (_contents.NeedsPassword && _password is null && !await AskPasswordAsync(null))
+            return;
 
         _cts = new CancellationTokenSource();
         IsExtracting = true;
@@ -268,14 +270,14 @@ public sealed partial class ArchiveViewModel : ObservableObject
                 {
                     var request = new ExtractRequest(_contents!.FilePath, destination, _password, mode, policy);
                     var result = await _service.ExtractAsync(request, progress, token);
-                    ReportSuccess(result);
+                    ReportSuccess(result, SavePasswordIfRequested());
                     return;
                 }
                 catch (ArchiveError e) when (e.Kind is ArchiveErrorKind.WrongPassword or ArchiveErrorKind.PasswordRequired
                                              && attempt < BatchExtractService.MaxPasswordAttempts && !token.IsCancellationRequested)
                 {
-                    _password = await Dialogs.PasswordAsync(FileName, e.Message);
-                    if (_password is null)
+                    PasswordFailed();
+                    if (!await AskPasswordAsync(e.Kind == ArchiveErrorKind.WrongPassword ? e.Message : null))
                     {
                         ShowResult(InfoBarSeverity.Informational, "Extraction cancelled", "No password was entered. Nothing was extracted.");
                         return;
@@ -290,7 +292,10 @@ public sealed partial class ArchiveViewModel : ObservableObject
         catch (ArchiveError e)
         {
             if (e.Kind == ArchiveErrorKind.WrongPassword)
-                _password = null;
+            {
+                PasswordFailed();
+                (_password, _savePassword) = (null, false);
+            }
             ShowResult(InfoBarSeverity.Error, "Extraction failed", e.Message);
         }
         catch (Exception e)
@@ -305,10 +310,12 @@ public sealed partial class ArchiveViewModel : ObservableObject
         }
     }
 
-    private void ReportSuccess(ExtractResult result)
+    private void ReportSuccess(ExtractResult result, string? note)
     {
         _lastDestination = result.Destination;
         var message = $"{BatchExtractService.Describe(result)} to {result.Destination}";
+        if (note is not null)
+            message += $"\n{note}";
         var details = new StringBuilder();
         foreach (var s in result.SkippedEntries.Take(50))
             details.AppendLine($"Not extracted: {s.EntryName} — {s.Reason}");
@@ -319,6 +326,46 @@ public sealed partial class ArchiveViewModel : ObservableObject
             details.AppendLine($"…and {hidden} more.");
         ShowResult(result.HasWarnings ? InfoBarSeverity.Warning : InfoBarSeverity.Success,
             result.HasWarnings ? "Extracted with warnings" : "Extraction complete", message, details.ToString().TrimEnd(), canOpen: true);
+    }
+
+    /// <summary>
+    /// Asks for the password (the dialog offers saved ones). A password that already failed for this archive
+    /// is not tried again: the user is asked for another. Returns false when the user cancels.
+    /// </summary>
+    private async Task<bool> AskPasswordAsync(string? reason)
+    {
+        while (true)
+        {
+            var answer = await Dialogs.PasswordAsync(FileName, reason);
+            if (answer is null)
+            {
+                (_password, _savePassword) = (null, false);
+                return false;
+            }
+            if (!_failedPasswords.Contains(answer.Password))
+            {
+                (_password, _savePassword) = (answer.Password, answer.Save);
+                return true;
+            }
+            reason = BatchExtractService.AlreadyTriedMessage;
+        }
+    }
+
+    private void PasswordFailed()
+    {
+        if (_password is not null)
+            _failedPasswords.Add(_password);
+    }
+
+    /// <summary>Saves the password if the user asked to. Call only after it worked. Returns a note if saving failed.</summary>
+    private string? SavePasswordIfRequested()
+    {
+        if (!_savePassword || _password is null || _contents is null)
+            return null;
+        _savePassword = false;
+        return App.Settings.Passwords.Save(System.IO.Path.GetFileName(_contents.FilePath), _password)
+            ? null
+            : "The password worked, but it could not be saved.";
     }
 
     private static async Task<ExistingFilePolicy?> AskExistingFilePolicyAsync(string destination, IReadOnlyList<string> existing)

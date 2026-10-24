@@ -7,7 +7,7 @@ namespace Mendrain.Helpers;
 /// <summary>User preferences and per-user storage locations (%LOCALAPPDATA%\Mendrain).</summary>
 public sealed class AppSettings
 {
-    private sealed record Data(string Theme = "System");
+    private sealed record Data(string Theme = "System", bool IncludePreviewUpdates = false);
 
     public static string DataFolder { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Mendrain");
@@ -15,6 +15,9 @@ public sealed class AppSettings
     private static string SettingsPath => Path.Combine(DataFolder, "settings.json");
 
     public RecentArchives Recent { get; } = new(Path.Combine(DataFolder, "recent.json"));
+
+    /// <summary>Archive passwords the user chose to save, encrypted with DPAPI for the current Windows account.</summary>
+    public SavedPasswordStore Passwords { get; } = new(Path.Combine(DataFolder, "passwords.json"));
 
     private Data _data = Load();
 
@@ -25,6 +28,17 @@ public sealed class AppSettings
         set
         {
             _data = _data with { Theme = value };
+            Save();
+        }
+    }
+
+    /// <summary>Offer pre-release versions as updates. Off by default: only stable releases.</summary>
+    public bool IncludePreviewUpdates
+    {
+        get => _data.IncludePreviewUpdates;
+        set
+        {
+            _data = _data with { IncludePreviewUpdates = value };
             Save();
         }
     }
