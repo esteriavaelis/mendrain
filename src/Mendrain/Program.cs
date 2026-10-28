@@ -8,7 +8,8 @@ namespace Mendrain;
 
 /// <summary>
 /// Entry point (replaces the XAML-generated Main). Runs Velopack's install/update hooks, handles the
-/// register/unregister switches without any UI, and hands Explorer context-menu requests to an already running Mendrain instead of opening another window.
+/// register/unregister switches without any UI, and hands Explorer requests (context menu, and opening an associated
+/// archive) to an already running Mendrain instead of opening another window.
 /// </summary>
 public static class Program
 {
@@ -22,12 +23,25 @@ public static class Program
         VelopackApp.Build()
             // An update is applied only when the user clicks "Restart now", never silently at startup.
             .SetAutoApplyOnStartup(false)
-            .OnAfterInstallFastCallback(_ => ShellMenu.Register(Environment.ProcessPath!))
-            .OnAfterUpdateFastCallback(_ => ShellMenu.RepairAfterUpdate(Environment.ProcessPath!))
-            .OnBeforeUninstallFastCallback(_ => ShellMenu.Unregister())
+            .OnAfterInstallFastCallback(_ =>
+            {
+                ShellMenu.Register(Environment.ProcessPath!);
+                // Lists Mendrain in Open with / Default apps; the user's default archive app stays as it is.
+                FileAssociations.Register(Environment.ProcessPath!);
+            })
+            .OnAfterUpdateFastCallback(_ =>
+            {
+                ShellMenu.RepairAfterUpdate(Environment.ProcessPath!);
+                FileAssociations.RepairAfterUpdate(Environment.ProcessPath!);
+            })
+            .OnBeforeUninstallFastCallback(_ =>
+            {
+                ShellMenu.Unregister();
+                FileAssociations.Unregister();
+            })
             .Run();
 
-        if (ShellMenu.HandleCommandLine(args) is { } exitCode)
+        if ((ShellMenu.HandleCommandLine(args) ?? FileAssociations.HandleCommandLine(args)) is { } exitCode)
             return exitCode;
 
         var isMain = InstanceChannel.TryBecomeMain();
