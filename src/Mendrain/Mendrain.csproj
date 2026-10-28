@@ -27,7 +27,7 @@
     <SelfContained>true</SelfContained>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Product>Mendrain</Product>
     <Description>A modern archive utility for Windows</Description>
     <Authors>Esteria Vaelis</Authors>

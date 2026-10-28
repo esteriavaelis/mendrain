@@ -39,6 +39,15 @@ public sealed record ShellCommand(ShellAction Action, IReadOnlyList<string> Path
     /// </summary>
     public static string CommandLine(string exePath, ShellAction action) => $"\"{exePath}\" {Switch} {NameOf(action)} \"%1\"";
 
+    /// <summary>The quoted program at the start of a registered command line, or null.</summary>
+    public static string? ProgramOf(string? commandLine)
+    {
+        if (commandLine is null || !commandLine.StartsWith('"'))
+            return null;
+        var end = commandLine.IndexOf('"', 1);
+        return end > 1 ? commandLine[1..end] : null;
+    }
+
     private static string? TryGetFullPath(string path)
     {
         if (string.IsNullOrWhiteSpace(path))

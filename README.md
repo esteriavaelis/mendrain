@@ -35,6 +35,8 @@
   and existing files are never replaced without your confirmation.
 - **File Explorer menu** — right-click ZIP, 7Z and RAR files for *Mendrain → Open with Mendrain / Extract Here /
   Extract to Folder / Batch Extract*, without changing your default archive app.
+- **Default archive app (optional)** — Mendrain is listed in *Open with* and Windows' Default apps for ZIP, RAR
+  and 7Z, so you can choose it as the default. It never makes itself the default.
 - Drag and drop, recent archives, and light, dark or system theme.
 
 ## Screenshots
@@ -52,7 +54,7 @@ Get the latest version from the
 
 | File | What it is |
 |---|---|
-| `Mendrain-Setup-x64.exe` | **Installer** (recommended). One click, no questions: installs for your user account only, without administrator rights, into `%LOCALAPPDATA%\MendrainApp`, adds a Start menu shortcut and the File Explorer menu, and can be removed from *Settings → Apps*. Updates itself. |
+| `Mendrain-Setup-x64.exe` | **Installer** (recommended). One click, no questions: installs for your user account only, without administrator rights, into `%LOCALAPPDATA%\MendrainApp`, adds a Start menu shortcut and the File Explorer menu, lists Mendrain in *Open with* and Default apps for ZIP, RAR and 7Z (your default app is not changed), and can be removed from *Settings → Apps*. Updates itself. |
 | `Mendrain-Portable-x64.zip` | **Portable version.** Unzip anywhere and run `Mendrain.exe`. Nothing is installed. Also updates itself (in its own folder). |
 
 Neither download needs .NET or any other runtime installed: everything Mendrain needs is included.
@@ -114,6 +116,21 @@ Mendrain has been tested on Windows 10 22H2 (x64). Windows 11 should work but ha
   The installer adds the menu, and updates keep it pointing at the installed program. For the portable
   version, or to repair the entries, use *Settings → File Explorer menu*. Removing it there (an update won't
   add it back), or uninstalling, deletes only Mendrain's own entries.
+- **Make Mendrain the default archive app:** the installer adds Mendrain to *Open with* and Windows' Default
+  apps for ZIP, RAR and 7Z, but keeps your current default (for example WinRAR). Windows lets only you change
+  the default, one file type at a time. *Settings → Default archive app → Set Mendrain as Default Archive App*
+  opens Windows' Default apps with instructions:
+  - Windows 10: click *Choose default apps by file type*, then click the app next to `.zip` and choose Mendrain;
+    do the same for `.rar` and `.7z`.
+  - Windows 11: Settings opens Mendrain's own Default apps page; click `.zip`, `.rar` and `.7z` in turn and
+    choose Mendrain.
+  - Or right-click an archive, *Open with → Choose another app*, pick Mendrain and tick *Always use this app*.
+
+  After that, double-clicking an archive opens it in Mendrain's viewer (in the open Mendrain window if there is
+  one; several archives opened together go to Batch Extract). Windows may also ask once which app to use the
+  next time you open such a file, because a new app can open it; that choice is yours. The portable version, or
+  an installation updated from 0.2.0, registers itself when you click the button. *Remove* (next to it), or
+  uninstalling, deletes only Mendrain's own entries and never changes other apps' registrations.
 - **Create a ZIP:** drop files and folders on the home screen (or open *Create ZIP*), pick a name and
   location, then click **Create ZIP**. Selected files go at the top of the ZIP; selected folders keep their
   name and everything inside them.
@@ -138,6 +155,8 @@ Limitations:
   the compact menu (that would need a packaged, code-signed app). The menu reads "Extract to Folder" instead of
   showing each archive's name, which would need a native shell extension.
 - The Explorer menu was tested on Windows 10 22H2. Windows 11 hasn't been tested.
+- The default-app registration was tested on Windows 10 22H2 (Open with list, *Set defaults by app*, opening
+  archives through Mendrain's registration). Windows 11's Default apps page link hasn't been tested.
 - Neither the installer nor the program is code-signed yet, so Windows SmartScreen may warn on first run.
 
 ## How extraction stays safe

@@ -6,6 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-28
+
+Mendrain can now be chosen as the default app for ZIP, RAR and 7Z files.
+
+### Added
+- Mendrain can be chosen as the default app for `.zip`, `.rar` and `.7z`. It registers per user (own ProgIDs
+  `MendrainApp.zip/.rar/.7z`, Default apps capabilities, an *Open with* entry) without changing the current
+  default app or touching WinRAR's or Windows' own registrations. Double-clicking an associated archive, or
+  *Open with → Mendrain*, opens it in the viewer, in the running Mendrain window if there is one; several
+  archives opened together go to Batch Extract.
+- *Settings → Default archive app → Set Mendrain as Default Archive App* registers this copy and opens Windows'
+  Default apps settings with short instructions. Windows requires the user to choose Mendrain for each file type
+  there (or with *Open with → Always use this app*); Mendrain never sets the default itself.
+- The installer registers the file types; uninstalling removes only Mendrain's own entries. Updates keep the
+  registration pointing at the installed program. Updating from 0.2.0 does not add it; use the Settings button.
+- `Mendrain.exe --register-file-types` / `--unregister-file-types` (no UI).
+
 ## [0.2.0] - 2026-10-25
 
 Saved passwords, a File Explorer right-click menu, and automatic updates.

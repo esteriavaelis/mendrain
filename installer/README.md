@@ -16,7 +16,13 @@ Mendrain is packaged with [Velopack](https://velopack.io). `tools/package.ps1` p
 - Adds the File Explorer menu (Velopack install hook → `ShellMenu.Register`), pointing at
   `%LOCALAPPDATA%\MendrainApp\current\Mendrain.exe`. That path stays the same across updates; the update hook
   only repairs the menu if it is still registered for this copy, so a user's *Remove* is respected.
-- Uninstalling removes `%LOCALAPPDATA%\MendrainApp`, the shortcut and Mendrain's menu keys (uninstall hook).
+- Registers the file types (install hook → `FileAssociations.Register`): ProgIDs `MendrainApp.zip/.rar/.7z`,
+  `HKCU\Software\MendrainApp\Capabilities` + a `Mendrain` value under `RegisteredApplications` (Default apps),
+  named values in `.zip/.rar/.7z\OpenWithProgids`, and `Applications\Mendrain.exe`. The extensions' default
+  values and UserChoice are never written, so the user's default app is unchanged. The update hook repairs this
+  like the menu (only if still registered for this copy, or for a deleted exe); an update from 0.2.0 doesn't add it.
+- Uninstalling removes `%LOCALAPPDATA%\MendrainApp`, the shortcut, Mendrain's menu keys and its file-type
+  registration (uninstall hook). Other apps' values in the shared keys stay.
 - User data (`settings.json`, `recent.json`, `passwords.json`, `mendrain.log`) lives in `%LOCALAPPDATA%\Mendrain`,
   outside the install folder, so updates and uninstalling never touch it. **Never change the pack ID to
   `Mendrain`**: Velopack deletes the whole install folder on uninstall, which would then be the data folder.

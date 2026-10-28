@@ -104,10 +104,7 @@ public static class ShellMenu
     public static string? RegisteredExecutable()
     {
         using var key = Registry.CurrentUser.OpenSubKey($@"{KeyPath(".zip")}\shell\{Verbs[0].Key}\command");
-        if (key?.GetValue("") is not string command || !command.StartsWith('"'))
-            return null;
-        var end = command.IndexOf('"', 1);
-        return end > 1 ? command[1..end] : null;
+        return ShellCommand.ProgramOf(key?.GetValue("") as string);
     }
 
     private static void RemoveKeys()
@@ -116,7 +113,7 @@ public static class ShellMenu
             Registry.CurrentUser.DeleteSubKeyTree(KeyPath(extension), throwOnMissingSubKey: false);
     }
 
-    private static void NotifyExplorer() => SHChangeNotify(0x08000000 /* SHCNE_ASSOCCHANGED */, 0, 0, 0);
+    internal static void NotifyExplorer() => SHChangeNotify(0x08000000 /* SHCNE_ASSOCCHANGED */, 0, 0, 0);
 
     [DllImport("shell32.dll")]
     private static extern void SHChangeNotify(int eventId, uint flags, nint item1, nint item2);
